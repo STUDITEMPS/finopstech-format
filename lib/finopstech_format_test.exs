@@ -140,6 +140,12 @@ defmodule FinopstechFormatTest do
       assert FinopstechFormat.datetime(~U[2026-09-24 22:30:00Z]) == "25.09.2026, 00:30"
     end
 
+    test "uses the calendar year, not the week-based year, at the turn of the year" do
+      # 29.12.2025 already belongs to calendar week 1 of 2026
+      assert FinopstechFormat.datetime(~N[2025-12-29 10:00:00]) == "29.12.2025, 10:00"
+      assert FinopstechFormat.datetime(~U[2027-01-01 10:00:00Z]) == "01.01.2027, 11:00"
+    end
+
     test "handles the daylight saving time changes" do
       # 29.03.2026: 02:00 CET -> 03:00 CEST
       assert FinopstechFormat.datetime(~U[2026-03-29 00:59:00Z]) == "29.03.2026, 01:59"

@@ -120,10 +120,10 @@ defmodule FinopstechFormat do
       "24.09.2026, 14:30"
   """
   @spec datetime(DateTime.t() | NaiveDateTime.t() | nil) :: String.t() | nil
-  @dt_format "dd.MM.YYYY, HH:mm"
+  @dt_format "dd.MM.y, HH:mm"
   def datetime(nil), do: nil
   def datetime(%DateTime{} = datetime), do: Cldr.DateTime.to_string!(to_local(datetime), format: @dt_format)
-  def datetime(%NaiveDateTime{} = datetime), do: Cldr.DateTime.to_string!(datetime, format: "dd.MM.YYYY, HH:mm")
+  def datetime(%NaiveDateTime{} = datetime), do: Cldr.DateTime.to_string!(datetime, format: @dt_format)
 
   defp format_date(%DateTime{} = date, opts), do: Cldr.Date.to_string!(to_local(date), opts)
   defp format_date(%NaiveDateTime{} = date, opts), do: Cldr.Date.to_string!(date, opts)
