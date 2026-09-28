@@ -14,8 +14,11 @@ defmodule FinopstechFormat do
 
   @time_zone "Europe/Berlin"
 
+  @type date :: Date.t() | DateTime.t() | NaiveDateTime.t()
+  @type month :: %{year: integer(), month: pos_integer(), __struct__: Shared.Month}
+  @type time :: Time.t() | DateTime.t() | NaiveDateTime.t()
+
   @type number_like :: integer() | float() | Decimal.t() | String.t()
-  @type year_month :: Date.t() | %{required(:year) => integer(), required(:month) => 1..12, optional(any()) => any()}
 
   @doc """
   Formats a number with a dot as thousands separator, a comma as decimal separator
@@ -52,11 +55,11 @@ defmodule FinopstechFormat do
       iex> FinopstechFormat.date(~D[2026-09-24], :short)
       "24.09."
   """
-  @spec date(Date.t() | DateTime.t() | NaiveDateTime.t() | nil, :default | :short) :: String.t() | nil
+  @spec date(date() | nil, :default | :short) :: String.t() | nil
   def date(date, style \\ :default)
   def date(nil, _style), do: nil
-  def date(date, :default), do: format_date(date, "dd.MM.y")
-  def date(date, :short), do: format_date(date, "dd.MM.")
+  def date(date, :default), do: format_date(date, format: :yMMdd)
+  def date(date, :short), do: format_date(date, format: :MMdd)
 
   @doc """
   Returns the German name of a month.
@@ -68,32 +71,33 @@ defmodule FinopstechFormat do
       "März"
 
       iex> FinopstechFormat.month_name(~D[2026-09-24], :short)
-      "Sept."
+      "Sep"
   """
-  @spec month_name(1..12 | %{required(:month) => 1..12, optional(any()) => any()} | nil, :long | :short) ::
-          String.t() | nil
+  @spec month_name(date() | nil, :long | :short) :: String.t() | nil
   def month_name(month, style \\ :long)
   def month_name(nil, _style), do: nil
-  def month_name(%{month: month}, style), do: month_name(month, style)
+  def month_name(month, style) when month in 1..12, do: month_name(Date.new!(2026, month, 1), style)
 
-  def month_name(month, style) when month in 1..12 do
-    format_date(Date.new!(2000, month, 1), month_pattern(style))
-  end
+  def month_name(%{year: year, month: month, __struct__: Shared.Month}, style),
+    do: month_name(Date.new!(year, month, 1), style)
+
+  def month_name(datetime, :long), do: format_date(datetime, format: :MMMM)
+  def month_name(datetime, :short), do: format_date(datetime, format: :MMM)
 
   @doc """
   Formats a month with its year, e.g. `"September 2026"` (`:long`) or `"Sept. 2026"` (`:short`).
   Accepts `Date` or anything with `:year` and `:month` fields.
 
-      iex> FinopstechFormat.month(%{year: 2026, month: 9})
+      iex> FinopstechFormat.month(~D[2026-09-01])
       "September 2026"
   """
-  @spec month(year_month() | nil, :long | :short) :: String.t() | nil
-  def month(month, style \\ :long)
+  @spec month(date() | month() | nil, :long | :short) :: String.t() | nil
+  def month(datetime, style \\ :long)
   def month(nil, _style), do: nil
-
-  def month(%{year: year, month: month}, style) do
-    format_date(Date.new!(year, month, 1), month_pattern(style) <> " y")
-  end
+  def month(month, style) when month in 1..12, do: month(Date.new!(2026, month, 1), style)
+  def month(%{year: year, month: month, __struct__: Shared.Month}, style), do: month(Date.new!(year, month, 1), style)
+  def month(datetime, :short), do: format_date(datetime, format: :yMMM)
+  def month(datetime, :long), do: format_date(datetime, format: :yMMMM)
 
   @doc """
   Formats a time as `"14:30"`.
@@ -102,11 +106,11 @@ defmodule FinopstechFormat do
       iex> FinopstechFormat.time(~T[14:30:59])
       "14:30"
   """
-  @spec time(Time.t() | DateTime.t() | NaiveDateTime.t() | nil) :: String.t() | nil
+  @spec time(time() | nil) :: String.t() | nil
   def time(nil), do: nil
-  def time(%DateTime{} = datetime), do: datetime |> to_local() |> time()
-  def time(%NaiveDateTime{} = datetime), do: datetime |> NaiveDateTime.to_time() |> time()
-  def time(%Time{} = time), do: Cldr.Time.to_string!(time, format: "HH:mm")
+  def time(%DateTime{} = time), do: Cldr.Time.to_string!(to_local(time), format: :Hm)
+  def time(%NaiveDateTime{} = time), do: Cldr.Time.to_string!(time, format: :Hm)
+  def time(%Time{} = time), do: Cldr.Time.to_string!(time, format: :Hm)
 
   @doc """
   Formats a point in time as `"24.09.2026, 14:30"`.
@@ -116,25 +120,16 @@ defmodule FinopstechFormat do
       "24.09.2026, 14:30"
   """
   @spec datetime(DateTime.t() | NaiveDateTime.t() | nil) :: String.t() | nil
+  @dt_format "dd.MM.YYYY, HH:mm"
   def datetime(nil), do: nil
-  def datetime(%DateTime{} = datetime), do: datetime |> to_local() |> datetime()
+  def datetime(%DateTime{} = datetime), do: Cldr.DateTime.to_string!(to_local(datetime), format: @dt_format)
+  def datetime(%NaiveDateTime{} = datetime), do: Cldr.DateTime.to_string!(datetime, format: "dd.MM.YYYY, HH:mm")
 
-  def datetime(%NaiveDateTime{} = datetime) do
-    date(NaiveDateTime.to_date(datetime)) <> ", " <> time(NaiveDateTime.to_time(datetime))
-  end
+  defp format_date(%DateTime{} = date, opts), do: Cldr.Date.to_string!(to_local(date), opts)
+  defp format_date(%NaiveDateTime{} = date, opts), do: Cldr.Date.to_string!(date, opts)
+  defp format_date(%Date{} = date, opts), do: Cldr.Date.to_string!(date, opts)
 
-  defp format_date(%DateTime{} = datetime, pattern), do: datetime |> to_local() |> format_date(pattern)
-
-  defp format_date(%NaiveDateTime{} = datetime, pattern), do: datetime |> NaiveDateTime.to_date() |> format_date(pattern)
-
-  defp format_date(%Date{} = date, pattern), do: Cldr.Date.to_string!(date, format: pattern)
-
-  defp month_pattern(:long), do: "MMMM"
-  defp month_pattern(:short), do: "MMM"
-
-  defp to_local(%DateTime{} = datetime) do
-    datetime |> DateTime.shift_zone!(@time_zone) |> DateTime.to_naive()
-  end
+  defp to_local(%DateTime{} = datetime), do: DateTime.shift_zone!(datetime, @time_zone)
 
   # CLDR doesn't round floats exactly (e.g. 0.005 becomes "0,00"); going through the
   # shortest decimal representation of the float gives correct half-up rounding.

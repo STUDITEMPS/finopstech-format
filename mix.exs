@@ -23,11 +23,12 @@ defmodule FinopstechFormat.MixProject do
   defp deps do
     [
       {:ex_cldr_numbers, "~> 2.38"},
-      {:ex_cldr_dates_times, "~> 2.24"},
+      {:ex_cldr_dates_times, "~> 2.25"},
       # Not used for parsing (ex_cldr uses Elixir's built-in JSON). ex_cldr_calendars declares
       # jason as a required dependency; declaring it here resolves the :only conflict with credo.
       {:jason, "~> 1.4"},
-      {:tzdata, "~> 1.1", only: :test},
+      {:jehovakel_ex_times, "~> 2.0", github: "STUDITEMPS/jehovakel_ex_times", only: [:test], runtime: false},
+      {:tzdata, "~> 1.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:styler, "~> 1.12", only: [:dev, :test], runtime: false}
     ]

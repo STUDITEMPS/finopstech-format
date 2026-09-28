@@ -1,4 +1,6 @@
 defmodule FinopstechFormatTest do
+  @moduledoc false
+
   use ExUnit.Case, async: true
 
   doctest FinopstechFormat
@@ -88,13 +90,13 @@ defmodule FinopstechFormatTest do
     end
 
     test "returns abbreviated month names" do
-      assert FinopstechFormat.month_name(3, :short) == "März"
-      assert FinopstechFormat.month_name(9, :short) == "Sept."
+      assert FinopstechFormat.month_name(3, :short) == "Mär"
+      assert FinopstechFormat.month_name(9, :short) == "Sep"
     end
 
     test "accepts anything with a month field" do
       assert FinopstechFormat.month_name(~D[2026-05-17]) == "Mai"
-      assert FinopstechFormat.month_name(%{year: 2026, month: 10}) == "Oktober"
+      assert FinopstechFormat.month_name(Shared.Month.new!(2026, 10)) == "Oktober"
     end
 
     test "returns nil for nil" do
@@ -105,7 +107,7 @@ defmodule FinopstechFormatTest do
   describe "month/2" do
     test "formats month and year" do
       assert FinopstechFormat.month(~D[2026-03-31]) == "März 2026"
-      assert FinopstechFormat.month(%{year: 2026, month: 9}, :short) == "Sept. 2026"
+      assert FinopstechFormat.month(Shared.Month.new!(2026, 9), :short) == "Sept. 2026"
     end
 
     test "returns nil for nil" do
