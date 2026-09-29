@@ -41,6 +41,30 @@ defmodule FinopstechFormat do
   end
 
   @doc """
+  Formats a factor as a percentage with `fraction_digits` decimal places, rounding half up.
+  `0.125` is `12,5 %` (German format with a non-breaking space before the percent sign).
+
+  Options:
+    * `sign: false` – only the percentage value without the percent sign, e.g. `"12,5"`
+
+      iex> FinopstechFormat.percent(0.125, 1, sign: false)
+      "12,5"
+  """
+  @spec percent(number_like() | nil, non_neg_integer(), keyword()) :: String.t() | nil
+  def percent(factor, fraction_digits \\ 0, opts \\ [])
+  def percent(nil, _fraction_digits, _opts), do: nil
+
+  def percent(factor, fraction_digits, opts) when is_integer(fraction_digits) and fraction_digits >= 0 do
+    if Keyword.get(opts, :sign, true) do
+      factor
+      |> to_decimal()
+      |> Cldr.Number.to_string!(format: :percent, fractional_digits: fraction_digits, rounding_mode: :half_up)
+    else
+      factor |> to_decimal() |> Decimal.mult(100) |> number(fraction_digits)
+    end
+  end
+
+  @doc """
   Formats a date.
 
   Styles:

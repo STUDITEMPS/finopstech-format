@@ -27,6 +27,9 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 |---|---|---|
 | `number/2` | `FinopstechFormat.number(1234.5)` | `"1.234,50"` |
 | | `FinopstechFormat.number(1234.5, 0)` | `"1.235"` |
+| `percent/3` | `FinopstechFormat.percent(0.125)` | `"13 %"` |
+| | `FinopstechFormat.percent(0.125, 1)` | `"12,5 %"` |
+| | `FinopstechFormat.percent(1, 1, sign: false)` | `"100,0"` |
 | `date/2` | `FinopstechFormat.date(~D[2026-09-24])` | `"24.09.2026"` |
 | | `FinopstechFormat.date(~D[2026-09-24], :short)` | `"24.09."` |
 | `month_name/2` | `FinopstechFormat.month_name(3)` | `"März"` |
@@ -39,6 +42,7 @@ Notes:
 
 - All functions return `nil` for `nil`.
 - `number/2` accepts integers, floats, `Decimal`s and strings and rounds half up.
+- `percent/3` takes a factor (`0.125` = 12,5 %); the percent sign is preceded by a non-breaking space (CLDR). `sign: false` returns only the value.
 - `date/2`, `time/1` and `datetime/1` shift `DateTime` values to Europe/Berlin (including
   daylight saving time); `NaiveDateTime` values are taken as local time.
 - `month_name/2` and `month/2` accept anything with `:month` (and `:year`) fields, e.g.

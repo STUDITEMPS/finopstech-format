@@ -63,6 +63,42 @@ defmodule FinopstechFormatTest do
     end
   end
 
+  describe "percent/3" do
+    @nbsp " "
+
+    test "formats a factor as percentage without fraction digits by default" do
+      assert FinopstechFormat.percent(0.125) == "13#{@nbsp}%"
+      assert FinopstechFormat.percent(1) == "100#{@nbsp}%"
+      assert FinopstechFormat.percent(0) == "0#{@nbsp}%"
+    end
+
+    test "formats with the given fraction digits, rounding half up" do
+      assert FinopstechFormat.percent(0.125, 1) == "12,5#{@nbsp}%"
+      assert FinopstechFormat.percent(0.12345, 2) == "12,35#{@nbsp}%"
+      assert FinopstechFormat.percent(0.005) == "1#{@nbsp}%"
+      assert FinopstechFormat.percent(-0.125, 1) == "-12,5#{@nbsp}%"
+    end
+
+    test "groups thousands" do
+      assert FinopstechFormat.percent(12.5) == "1.250#{@nbsp}%"
+    end
+
+    test "formats decimals and strings" do
+      assert FinopstechFormat.percent(Decimal.new("0.2"), 1) == "20,0#{@nbsp}%"
+      assert FinopstechFormat.percent("0.075", 1) == "7,5#{@nbsp}%"
+    end
+
+    test "returns only the value without the sign" do
+      assert FinopstechFormat.percent(1, 1, sign: false) == "100,0"
+      assert FinopstechFormat.percent(0.125, 0, sign: false) == "13"
+      assert FinopstechFormat.percent(0.005, 1, sign: false) == "0,5"
+    end
+
+    test "returns nil for nil" do
+      assert FinopstechFormat.percent(nil) == nil
+    end
+  end
+
   describe "date/2" do
     test "formats dates" do
       assert FinopstechFormat.date(~D[2026-01-05]) == "05.01.2026"
