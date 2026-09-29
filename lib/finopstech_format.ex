@@ -56,16 +56,20 @@ defmodule FinopstechFormat do
   def percent(nil, _opts), do: nil
 
   def percent(factor, opts) when is_list(opts) do
-    fraction_digits = Keyword.get(opts, :fraction_digits, 0)
+    cldr_opts = [
+      format: :percent,
+      fractional_digits: Keyword.get(opts, :fraction_digits, 0),
+      rounding_mode: :half_up
+    ]
 
-    if Keyword.get(opts, :sign, true) do
-      factor
-      |> to_decimal()
-      |> Cldr.Number.to_string!(format: :percent, fractional_digits: fraction_digits, rounding_mode: :half_up)
-    else
-      factor |> to_decimal() |> Decimal.mult(100) |> number(fraction_digits)
-    end
+    cldr_opts = if Keyword.get(opts, :sign, true), do: cldr_opts, else: [{:wrapper, &without_sign/2} | cldr_opts]
+
+    factor |> to_decimal() |> Cldr.Number.to_string!(cldr_opts)
   end
+
+  # Drops the percent sign and the (non-breaking) space in front of it.
+  defp without_sign(_string, tag) when tag in [:percent, :literal], do: ""
+  defp without_sign(string, _tag), do: string
 
   @doc """
   Formats a date.
