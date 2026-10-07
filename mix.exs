@@ -9,24 +9,26 @@ defmodule FinopstechFormat.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       test_paths: ["lib"],
-      description: "Preconfigured German number and date formatting for FinOpsTech (wrapper around CLDR)",
+      description: "Preconfigured German number and date formatting for FinOpsTech (wrapper around Localize)",
       source_url: "https://github.com/STUDITEMPS/finopstech_format"
     ]
   end
 
   def application do
     [
+      mod: {FinopstechFormat.Application, []},
       extra_applications: [:logger]
     ]
   end
 
   defp deps do
     [
-      {:ex_cldr_numbers, "~> 2.38"},
-      {:ex_cldr_dates_times, "~> 2.25"},
-      # Not used for parsing (ex_cldr uses Elixir's built-in JSON). ex_cldr_calendars declares
-      # jason as a required dependency; declaring it here resolves the :only conflict with credo.
-      {:jason, "~> 1.4"},
+      # The shipped German locale data (priv/localize/locales/de.etf) must match the
+      # CLDR data of the installed Localize version, so it is pinned exactly.
+      {:localize, "== 1.3.0"},
+      # localize needs gettext ~> 1.0, timex (via jehovakel_ex_times, tests only) still
+      # declares ~> 0.26. The apps override gettext the same way.
+      {:gettext, "~> 1.0", override: true},
       {:jehovakel_ex_times, "~> 2.0", github: "STUDITEMPS/jehovakel_ex_times", only: [:test], runtime: false},
       {:tzdata, "~> 1.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
