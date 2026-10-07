@@ -2,16 +2,16 @@ defmodule FinopstechFormat do
   @moduledoc """
   Preconfigured German formatting of numbers, dates and times for the FinOpsTech apps.
 
-  A thin wrapper around CLDR (`ex_cldr_numbers`, `ex_cldr_dates_times`) with the
-  formats we use everywhere. All functions return `nil` for `nil`.
+  A thin wrapper around [Localize](https://hex.pm/packages/localize) (CLDR) with the
+  formats we use everywhere. Always formats German, independent of `LANG` or the
+  Localize default locale. All functions return `nil` for `nil`.
 
   `DateTime` values are shifted to `Europe/Berlin` before formatting. This requires a
   time zone database, e.g. `config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase`.
   `NaiveDateTime` values are taken as local time.
   """
 
-  alias FinopstechFormat.Cldr
-
+  @locale :de
   @time_zone "Europe/Berlin"
 
   @type date :: Date.t() | DateTime.t() | NaiveDateTime.t()
@@ -37,7 +37,7 @@ defmodule FinopstechFormat do
   def number(number, fraction_digits) when is_integer(fraction_digits) and fraction_digits >= 0 do
     number
     |> to_decimal()
-    |> Cldr.Number.to_string!(fractional_digits: fraction_digits, rounding_mode: :half_up)
+    |> Localize.Number.to_string!(locale: @locale, fractional_digits: fraction_digits, rounding_mode: :half_up)
   end
 
   @doc """
@@ -56,20 +56,22 @@ defmodule FinopstechFormat do
   def percent(nil, _opts), do: nil
 
   def percent(factor, opts) when is_list(opts) do
-    cldr_opts = [
-      format: :percent,
-      fractional_digits: Keyword.get(opts, :fraction_digits, 0),
-      rounding_mode: :half_up
-    ]
+    fraction_digits = Keyword.get(opts, :fraction_digits, 0)
 
-    cldr_opts = if Keyword.get(opts, :sign, true), do: cldr_opts, else: [{:wrapper, &without_sign/2} | cldr_opts]
-
-    factor |> to_decimal() |> Cldr.Number.to_string!(cldr_opts)
+    if Keyword.get(opts, :sign, true) do
+      factor
+      |> to_decimal()
+      |> Localize.Number.to_string!(
+        locale: @locale,
+        format: :percent,
+        fractional_digits: fraction_digits,
+        rounding_mode: :half_up
+      )
+    else
+      # Same digits as the percent format (#,##0 %), just without the sign.
+      factor |> to_decimal() |> Decimal.mult(100) |> number(fraction_digits)
+    end
   end
-
-  # Drops the percent sign and the (non-breaking) space in front of it.
-  defp without_sign(_string, tag) when tag in [:percent, :literal], do: ""
-  defp without_sign(string, _tag), do: string
 
   @doc """
   Formats a date.
@@ -112,7 +114,9 @@ defmodule FinopstechFormat do
   def month_name(%{year: year, month: month, __struct__: Shared.Month}, style),
     do: month_name(Date.new!(year, month, 1), style)
 
-  def month_name(datetime, :long), do: format_date(datetime, format: :MMMM)
+  # The skeleton :MMMM resolves to the abbreviated name in Localize, so the full
+  # stand-alone month name is requested as a pattern.
+  def month_name(datetime, :long), do: format_date(datetime, format: "LLLL")
   def month_name(datetime, :short), do: format_date(datetime, format: :MMM)
 
   @doc """
@@ -139,9 +143,9 @@ defmodule FinopstechFormat do
   """
   @spec time(time() | nil) :: String.t() | nil
   def time(nil), do: nil
-  def time(%DateTime{} = time), do: Cldr.Time.to_string!(to_local(time), format: :Hm)
-  def time(%NaiveDateTime{} = time), do: Cldr.Time.to_string!(time, format: :Hm)
-  def time(%Time{} = time), do: Cldr.Time.to_string!(time, format: :Hm)
+  def time(%DateTime{} = time), do: format_time(to_local(time))
+  def time(%NaiveDateTime{} = time), do: format_time(time)
+  def time(%Time{} = time), do: format_time(time)
 
   @doc """
   Formats a point in time as `"24.09.2026, 14:30"`.
@@ -153,17 +157,21 @@ defmodule FinopstechFormat do
   @spec datetime(DateTime.t() | NaiveDateTime.t() | nil) :: String.t() | nil
   @dt_format "dd.MM.y, HH:mm"
   def datetime(nil), do: nil
-  def datetime(%DateTime{} = datetime), do: Cldr.DateTime.to_string!(to_local(datetime), format: @dt_format)
-  def datetime(%NaiveDateTime{} = datetime), do: Cldr.DateTime.to_string!(datetime, format: @dt_format)
+  def datetime(%DateTime{} = datetime), do: format_datetime(to_local(datetime))
+  def datetime(%NaiveDateTime{} = datetime), do: format_datetime(datetime)
 
-  defp format_date(%DateTime{} = date, opts), do: Cldr.Date.to_string!(to_local(date), opts)
-  defp format_date(%NaiveDateTime{} = date, opts), do: Cldr.Date.to_string!(date, opts)
-  defp format_date(%Date{} = date, opts), do: Cldr.Date.to_string!(date, opts)
+  defp format_datetime(datetime), do: Localize.DateTime.to_string!(datetime, locale: @locale, format: @dt_format)
+
+  defp format_time(time), do: Localize.Time.to_string!(time, locale: @locale, format: :Hm)
+
+  defp format_date(%DateTime{} = date, opts), do: date |> to_local() |> DateTime.to_date() |> format_date(opts)
+  defp format_date(%NaiveDateTime{} = date, opts), do: date |> NaiveDateTime.to_date() |> format_date(opts)
+  defp format_date(%Date{} = date, opts), do: Localize.Date.to_string!(date, [locale: @locale] ++ opts)
 
   defp to_local(%DateTime{} = datetime), do: DateTime.shift_zone!(datetime, @time_zone)
 
-  # CLDR doesn't round floats exactly (e.g. 0.005 becomes "0,00"); going through the
-  # shortest decimal representation of the float gives correct half-up rounding.
+  # A float like 0.005 is stored as 0.00499…, so rounding it directly gives "0,00"; going
+  # through the shortest decimal representation of the float gives correct half-up rounding.
   defp to_decimal(number) when is_float(number), do: Decimal.from_float(number)
   defp to_decimal(number) when is_binary(number), do: Decimal.new(number)
   defp to_decimal(number), do: number
