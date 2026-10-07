@@ -2,7 +2,9 @@
 
 Preconfigured German formatting of numbers, dates and times for the FinOpsTech apps.
 A thin wrapper around [CLDR](https://github.com/elixir-cldr) (`ex_cldr_numbers`,
-`ex_cldr_dates_times`) that offers exactly the formats we use.
+`ex_cldr_dates_times`) that offers exactly the formats we use. Version **0.1.0**, versioned
+with [Semantic Versioning](https://semver.org) (see [Versioning](#versioning)); changes not
+yet released are listed under "Unreleased" in [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
 
@@ -48,10 +50,30 @@ Notes:
 - `month_name/2` and `month/2` accept anything with `:month` (and `:year`) fields, e.g.
   `Date` or month structs.
 
+## Versioning
+
+The library follows [Semantic Versioning](https://semver.org). Each release is an annotated git
+tag `vX.Y.Z` on `main`, and `version` in `mix.exs` matches the tag. Changes are listed in
+[CHANGELOG.md](CHANGELOG.md).
+
+- `0.x`: Breaking changes bump the minor version (`0.1.0` → `0.2.0`), everything else the
+  patch version. A change of the formatted output counts as breaking.
+- `1.0.0`: once the API is considered stable; from then on, breaking changes bump the major
+  version.
+
+Release steps:
+
+1. Update `version` in `mix.exs` and move the "Unreleased" entries in `CHANGELOG.md` to a new
+   version section.
+2. Commit, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` and `git push origin main vX.Y.Z`.
+3. Apps update the `tag:` of their dependency and run `mix deps.update finopstech_format`
+   (and `mix deps.unlock --unused`).
+
 ## Development
 
 - Compatible with Elixir ≥ 1.18. CI tests Elixir 1.18/OTP 27 and 1.20/OTP 29.
 - The German CLDR locale data is committed under `priv/cldr/locales/de.json`, so builds
   don't download it. After updating `ex_cldr`, run `mix compile` and commit the regenerated
   file from `_build/*/lib/finopstech_format/priv/cldr/locales/` into `priv/`.
-- `mix format`, `mix credo --strict` and `mix test` must pass.
+- `mix format --check-formatted`, `mix compile --warnings-as-errors`, `mix credo --strict` and
+  `mix test` must pass.
