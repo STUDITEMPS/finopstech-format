@@ -2,7 +2,7 @@
 
 Preconfigured German formatting of numbers, dates and times for the FinOpsTech apps.
 A thin wrapper around [Localize](https://hex.pm/packages/localize) (Unicode CLDR) that
-offers exactly the formats we use. Version **0.1.0**, versioned with
+offers exactly the formats we use. Version **0.2.0**, versioned with
 [Semantic Versioning](https://semver.org) (see [Versioning](#versioning)); changes not yet
 released are listed under "Unreleased" in [CHANGELOG.md](CHANGELOG.md).
 
