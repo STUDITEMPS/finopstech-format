@@ -29,8 +29,7 @@ defmodule FinopstechFormat.MixProject do
       # localize needs gettext ~> 1.0, timex (via jehovakel_ex_times, tests only) still
       # declares ~> 0.26. The apps override gettext the same way.
       {:gettext, "~> 1.0", override: true},
-      {:jehovakel_ex_times, "~> 2.1", github: "STUDITEMPS/jehovakel_ex_times", tag: "v2.1.0", only: [:test],
-       runtime: false},
+      {:jehovakel_ex_times, "~> 2.1", github: "STUDITEMPS/jehovakel_ex_times", only: [:test], runtime: false},
       {:tzdata, "~> 1.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:styler, "~> 1.12", only: [:dev, :test], runtime: false}
